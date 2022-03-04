@@ -1,5 +1,5 @@
 /*
- * Lab3 part D
+ * Lab3 part F
  *
  * Created: 3/1/2022 1:23:30 PM
  * Author : Ross Miller
@@ -95,41 +95,6 @@ ISR(TIMER1_COMPA_vect){
 	overflow = 0;
 	trig = 0;
 	OCR1A = a < 65535 ? a: a - 65535;
-	if(ADC<100){
-		OCR1B = OCR1A*.05;
-	}
-	else if(ADC >= 100 && ADC <200){
-		OCR1B = OCR1A*.1;
-	}
-	else if(ADC >= 200 && ADC <300){
-		OCR1B = OCR1A*.15;
-	}
-	else if(ADC >= 300 && ADC <400){
-		OCR1B = OCR1A*.2;
-	}
-	else if(ADC >= 400 && ADC <500){
-		OCR1B = OCR1A*.25;
-	}
-	else if(ADC >= 500 && ADC <600){
-		OCR1B = OCR1A*.3;
-	}
-	else if(ADC >= 600 && ADC <700){
-		OCR1B = OCR1A*.35;
-	}
-	else if(ADC >= 700 && ADC <800){
-		OCR1B = OCR1A*.4;
-	}
-	else if(ADC >= 800 && ADC <900){
-		OCR1B = OCR1A*.45;
-	}
-	else if(ADC >= 900 && ADC <1000){
-		OCR1B = OCR1A*.5;
-	}
-	else{
-		OCR1B = OCR1A*.55;
-	}
-	sprintf(String, "DUTY CYCLE %d\n", OCR1B);
-	UART_putstring(String);
 }
 ISR(TIMER1_OVF_vect){
 	overflow++;
@@ -168,37 +133,37 @@ ISR(TIMER1_CAPT_vect) {
 	overflow = 0;
 	prevEdge = inputCapt;
 	if(ADC<100){
-		OCR0B = OCR0A*.05;
+		OCR0B = OCR0A*.55;
 	}
 	else if(ADC >= 100 && ADC <200){
-		OCR0B = OCR0A*.1;
+		OCR0B = OCR0A*.50;
 	}
 	else if(ADC >= 200 && ADC <300){
-		OCR0B = OCR0A*.15;
+		OCR0B = OCR0A*.45;
 	}
 	else if(ADC >= 300 && ADC <400){
-		OCR0B = OCR0A*.2;
+		OCR0B = OCR0A*.4;
 	}
 	else if(ADC >= 400 && ADC <500){
-		OCR0B = OCR0A*.25;
+		OCR0B = OCR0A*.35;
 	}
 	else if(ADC >= 500 && ADC <600){
 		OCR0B = OCR0A*.3;
 	}
 	else if(ADC >= 600 && ADC <700){
-		OCR0B = OCR0A*.35;
+		OCR0B = OCR0A*.25;
 	}
 	else if(ADC >= 700 && ADC <800){
-		OCR0B = OCR0A*.4;
+		OCR0B = OCR0A*.2;
 	}
 	else if(ADC >= 800 && ADC <900){
-		OCR0B = OCR0A*.45;
+		OCR0B = OCR0A*.15;
 	}
 	else if(ADC >= 900 && ADC <1000){
-		OCR0B = OCR0A*.5;
+		OCR0B = OCR0A*.1;
 	}
 	else{
-		OCR0B = OCR0A*.55;
+		OCR0B = OCR0A*.05;
 	}
 	sprintf(String, "DUTY CYCLE %d\n", OCR0B);
 	UART_putstring(String);
