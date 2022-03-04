@@ -14,17 +14,14 @@
 #include "uart.h"
 #include <stdlib.h>
 #include <stdio.h>
-/***mode 0 is the when button not pressed = continuous mode***/
-/***mode 1 is the when button is pressed = discrete mode***/
+
 volatile int mode = 1;
-/***trig= 0 means no trigger pulse was sent and vice-versa***/
-volatile int trig;
-volatile unsigned long prevEdge = 0;
-volatile unsigned long overflow;
+volatile unsigned long overf;
+volatile int tr;
+volatile unsigned long edge = 0;
 char String[25];
 void Initialize(){
 	cli();
-	//set up timer0 in phase correct pwm mode
 	DDRD |= (1<<DDD5);
 	PORTD |= (1<<PORTD5);
 	TCCR0B |= (1<<CS00);
@@ -33,8 +30,7 @@ void Initialize(){
 	TCCR0A |= (1<<WGM00);
 	TCCR0B |= (1<<WGM02);
 	TCCR0A |= (1<<COM0A0);
-	//set timer1 to be used with the US sensor
-	DDRB &= ~(1<<DDB0); //for echo use
+	DDRB &= ~(1<<DDB0); 
 	PORTB &= ~(1<<PORTB0);
 	DDRD |= (1<<DDD7);
 	PORTD &= ~(1<<PORTD7);
@@ -46,37 +42,28 @@ void Initialize(){
 	OCR1A = 15000;
 	TCCR0A |= (1<<COM0B0);
 	TCCR0A |= (1<<COM0B1);
-	overflow = 0;
+	overf = 0;
 	trig = 0;
-	//use PB1 to determine which mode we are in
 	DDRB &= ~(1<<DDB1);
 	PORTB &= ~(1<<PORTB1);
 	PCICR |= (1<<PCIE0);
 	PCMSK0 |= (1<<PCINT1);
-	// ADC setup
 	PRR &= ~(1<<PRADC);
-	
 	ADMUX |= (1<<REFS0);
 	ADMUX &= ~(1<<REFS1);
-	
 	ADCSRA |= (1<<ADPS0);
 	ADCSRA |= (1<<ADPS1);
 	ADCSRA |= (1<<ADPS2);
-	
 	ADMUX &= ~(1<<MUX0);
 	ADMUX &= ~(1<<MUX1);
 	ADMUX &= ~(1<<MUX2);
 	ADMUX &= ~(1<<MUX3);
-	
 	ADCSRA |= (1<<ADATE);
 	ADCSRB &= ~(1<<ADTS0);
 	ADCSRB &= ~(1<<ADTS1);
 	ADCSRB &= ~(1<<ADTS2);
-	
 	DIDR0 |= (1<<ADC0D);
-	
 	ADCSRA |= (1<<ADEN);
-	
 	ADCSRA |= (1<<ADSC);
 	sei();
 }
@@ -92,46 +79,50 @@ ISR(TIMER1_COMPA_vect){
 	unsigned long a = OCR1A + 15000;
 	PORTD &= ~(1<<PORTD7);
 	TCCR1B |= (1<<ICES1);
-	overflow = 0;
-	trig = 0;
-	OCR1A = a < 65535 ? a: a - 65535;
+	overf = 0;
+	tr = 0;
+	if(a < 65535){
+		a=a;
+	} else {
+		a -= 65535;
+	}
 }
 ISR(TIMER1_OVF_vect){
-	overflow++;
+	overf++;
 }
 ISR(TIMER1_CAPT_vect) {
 	unsigned long inputCapt = ICR1;
-	if(trig == 1) {
+	if(tr == 1) {
 		TCCR1B &= ~(1<<ICES1);
-		trig++;
+		tr++;
 		} else {
-		unsigned long period = (unsigned long)(overflow * 65535) + inputCapt - prevEdge;  
+		unsigned long period = (unsigned long)(overf * 65535) + inputCapt - edge;  
 		unsigned long distance = (period * 64 * 170 * 100) / ( F_CPU );  
 		sprintf(String, "distance is %d cm \n", distance);
 		UART_putstring(String);
 		sprintf(String, "In mode %d\n", mode);
 		UART_putstring(String);
 		if (mode == 1){
-			if (distance <= 10) OCR0A = 60;
-			else if (distance > 10 && distance <= 20) OCR0A = 53;
-			else if (distance > 20 && distance <= 30) OCR0A = 48;
-			else if (distance > 30 && distance <= 40) OCR0A = 45;
-			else if (distance > 40 && distance <= 50) OCR0A = 40;
-			else if (distance > 50 && distance <= 60) OCR0A = 36;
-			else if (distance > 60 &&distance <= 70) OCR0A = 32;
+			if (distance <= 25) OCR0A = 60;
+			else if (distance > 25 && distance <= 50) OCR0A = 53;
+			else if (distance > 75 && distance <= 100) OCR0A = 48;
+			else if (distance > 125 && distance <= 150) OCR0A = 45;
+			else if (distance > 175 && distance <= 200) OCR0A = 40;
+			else if (distance > 225 && distance <= 250) OCR0A = 36;
+			else if (distance > 275 &&distance <= 300) OCR0A = 32;
 			else OCR0A = 30;
 			} else {
 		OCR0A = (unsigned int)((-38/100)*distance)+59.7;  
 		}
-		trig = 0;
+		tr = 0;
 		TCCR1B |= (1<<ICES1);
 	}
 	sprintf(String, "ADC %u\n", ADC);
 	UART_putstring(String);
 	unsigned long a = ICR1 + 15000;
 	OCR1A = a < 65535 ? a: a - 65535;
-	overflow = 0;
-	prevEdge = inputCapt;
+	overf = 0;
+	edge = inputCapt;
 	if(ADC<100){
 		OCR0B = OCR0A*.55;
 	}
@@ -175,11 +166,11 @@ int main(void)
 	UART_init(BAUD_PRESCALER);
 	while (1)
 	{
-		if (trig == 0) {
+		if (tr == 0) {
 			PORTD |= (1<<PORTD7);
 			_delay_us(10);
 			PORTD &= ~(1<<PORTD7);
-			trig = 1;
+			tr = 1;
 		}
 	}
 }
