@@ -1,5 +1,5 @@
 /*
- * Lab 3
+ * Lab 3 part C
  *
  * Created: 2/27/2022 3:12:13 PM
  * Author : Ross Miller
