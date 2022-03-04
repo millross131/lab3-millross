@@ -36,6 +36,7 @@ void Initialize(){
 	PORTD &= ~(1<<PORTD7);
 	TCCR1B |= (1<<CS10);
 	TCCR1B |= (1<<CS11);
+	TCCR1B &= ~(1<<CS12);
 	TCCR1B |= (1<<ICES1);
 	TIMSK1 |= (1<<ICIE1);
 	TIMSK1 |= (1<<TOIE1);
@@ -117,8 +118,6 @@ ISR(TIMER1_CAPT_vect) {
 		tr = 0;
 		TCCR1B |= (1<<ICES1);
 	}
-	sprintf(String, "ADC %u\n", ADC);
-	UART_putstring(String);
 	unsigned long a = ICR1 + 15000;
 	OCR1A = a < 65535 ? a: a - 65535;
 	overf = 0;
@@ -156,8 +155,7 @@ ISR(TIMER1_CAPT_vect) {
 	else{
 		OCR0B = OCR0A*.05;
 	}
-	sprintf(String, "DUTY CYCLE %d\n", OCR0B);
-	UART_putstring(String);
+	
 }
 
 int main(void)
